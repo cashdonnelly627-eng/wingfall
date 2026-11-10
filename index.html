@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>WINGFALL</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#f5c542;--gold2:#ffdd6b;--line:rgba(255,255,255,.14);--panel:rgba(8,14,26,.72);--blue:#4fb3ff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Rajdhani,Arial,sans-serif;color:#e8eef6;user-select:none}
+#stage{position:absolute;left:50%;top:50%;width:1672px;height:941px;transform-origin:center;overflow:hidden}
+.screen{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .5s}
+.screen.on{opacity:1;pointer-events:auto}
+/* ---------- LOBBY BACKGROUND ---------- */
+#bg{position:absolute;inset:-30px;background:url(assets/lobby.png) center/cover;filter:saturate(1.1) brightness(.85);animation:drift 24s ease-in-out infinite alternate}
+@keyframes drift{0%{transform:scale(1.04) translate(0,0)}100%{transform:scale(1.08) translate(-14px,-6px)}}
+#bgMask{position:absolute;left:560px;top:40px;width:560px;height:860px;background:radial-gradient(ellipse at 50% 55%,rgba(6,12,24,.96) 35%,rgba(6,12,24,.7) 55%,transparent 72%);filter:blur(12px)}
+canvas{position:absolute;inset:0}
+.vign{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.75) 100%),linear-gradient(90deg,rgba(0,0,0,.55),transparent 28%,transparent 72%,rgba(0,0,0,.55));pointer-events:none}
+/* ---------- OPERATOR ---------- */
+#opWrap{position:absolute;left:836px;bottom:60px;width:0;height:0}
+#op{position:absolute;left:-235px;bottom:0;width:470px;height:874px;background:url(assets/operator.png) center bottom/contain no-repeat;
+ -webkit-mask-image:radial-gradient(ellipse 48% 55% at 50% 50%,#000 70%,transparent 100%);mask-image:radial-gradient(ellipse 48% 55% at 50% 50%,#000 70%,transparent 100%);
+ transform-origin:50% 100%;filter:drop-shadow(0 0 22px rgba(80,170,255,.35))}
+#opShadow{position:absolute;left:-170px;bottom:-18px;width:340px;height:40px;background:radial-gradient(ellipse,rgba(0,0,0,.85),transparent 70%)}
+#opReflect{position:absolute;left:-235px;top:0;width:470px;height:300px;background:url(assets/operator.png) center top/contain no-repeat;transform:scaleY(-1);opacity:.18;filter:blur(3px);
+ -webkit-mask-image:linear-gradient(to top,#000,transparent 60%);mask-image:linear-gradient(to top,#000,transparent 60%)}
+/* ---------- HUD ---------- */
+.top{position:absolute;left:0;right:0;top:0;height:64px;background:linear-gradient(180deg,rgba(2,6,14,.95),rgba(2,6,14,.75));border-bottom:1px solid var(--line);display:flex;align-items:center;z-index:5}
+.logo{display:flex;align-items:center;gap:14px;margin-left:50px;font-family:Teko;font-size:46px;letter-spacing:3px;font-weight:600}
+.logo svg{width:90px}
+.btnTag{border:1px solid #888;border-radius:5px;font-size:12px;padding:1px 6px;color:#ccc;margin:0 30px}
+nav{display:flex;height:100%}
+nav a{display:flex;align-items:center;padding:0 26px;font-size:17px;letter-spacing:1px;color:#c9d3e0;cursor:pointer;position:relative;font-weight:600}
+nav a.act{color:#fff}nav a.act:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+nav a:hover{color:#fff}
+.prof{margin-left:auto;display:flex;align-items:center;gap:22px;padding-right:24px;border-left:1px solid var(--line);padding-left:12px;height:100%}
+.prof img{width:48px;height:48px;object-fit:cover;object-position:60% 15%;border:1px solid var(--line)}
+.cp{color:var(--gold);font-weight:700}.cp b{color:#fff;font-size:18px}
+.title{position:absolute;left:42px;top:128px}
+.title h1{font-family:Teko;font-size:62px;line-height:1;letter-spacing:2px;display:flex;align-items:center;gap:22px;margin-left:80px}
+.leg{border:1.5px solid var(--gold);color:var(--gold);font-family:Rajdhani;font-size:17px;padding:2px 10px;border-radius:3px;background:rgba(245,197,66,.1)}
+.title h3{margin:10px 0 0 82px;letter-spacing:3px;font-size:17px}
+.title p{margin:18px 0 0 82px;line-height:1.45;font-size:15px;color:#c8d4e4}
+.title svg{position:absolute;left:0;top:0;width:64px}
+.panel{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(6px)}
+.squad{position:absolute;left:37px;top:315px;width:306px}
+.squad .hd,.side .hd{display:flex;justify-content:space-between;padding:8px 16px;font-size:17px;font-weight:600;letter-spacing:1px}
+.slot{margin:0 8px 8px;height:54px;border:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 10px;font-size:14px;cursor:pointer;transition:.2s}
+.slot:hover{border-color:#8aa;background:rgba(255,255,255,.05)}
+.slot.me{border:2px solid var(--gold)}
+.slot img{width:42px;height:42px;object-fit:cover;object-position:60% 15%}
+.slot .av{width:58px;height:44px;display:grid;place-items:center;background:rgba(255,255,255,.06);color:#aab}
+.deploy{position:absolute;left:40px;top:752px;width:322px;height:70px;border:2px solid var(--gold);background:linear-gradient(90deg,rgba(245,197,66,.25),rgba(20,16,4,.85));display:flex;align-items:center;justify-content:center;gap:26px;font-family:Teko;font-size:40px;color:var(--gold2);letter-spacing:2px;cursor:pointer;box-shadow:0 0 24px rgba(245,197,66,.35),inset 0 0 20px rgba(245,197,66,.2);animation:pulse 2.4s infinite}
+@keyframes pulse{50%{box-shadow:0 0 40px rgba(245,197,66,.6),inset 0 0 30px rgba(245,197,66,.3)}}
+.cust{position:absolute;left:375px;top:752px;width:214px;height:70px;display:flex;align-items:center;justify-content:center;gap:22px;font-size:20px;font-weight:700;letter-spacing:1px;cursor:pointer}
+.cust:hover,.mode:hover{border-color:#cfd8e6}
+.side{position:absolute;right:40px;width:398px}
+.opCard{margin:0 10px 10px;height:98px;border:2px solid var(--gold);display:flex;align-items:center;background:rgba(0,0,0,.4);position:relative}
+.opCard img{width:150px;height:94px;object-fit:cover;object-position:60% 12%}
+.opCard .nm{margin-left:24px;font-size:19px;font-weight:700}
+.mode{margin:0 10px 10px;height:84px;border:1px solid var(--line);display:flex;align-items:center;gap:18px;padding:0 20px;cursor:pointer;position:relative;overflow:hidden;background:linear-gradient(90deg,rgba(10,16,30,.95) 40%,rgba(30,50,80,.5))}
+.mode b{display:block;font-size:20px;letter-spacing:1px}.mode small{color:var(--blue);font-size:13px;letter-spacing:1px}
+.chev{position:absolute;right:16px;font-size:26px;color:#dde}
+.forms{display:flex;gap:8px;margin:0 10px 10px}
+.form{flex:1;height:122px;border:1px solid var(--line);position:relative;cursor:pointer;overflow:hidden;background:#0a1220}
+.form img{width:100%;height:100%;object-fit:cover;object-position:60% 15%}
+.form span{position:absolute;left:8px;bottom:6px;font-size:13px;font-weight:700;text-shadow:0 1px 4px #000}
+.form.sel{border:2px solid var(--gold)}
+.form:nth-child(2) img{filter:brightness(.55) sepia(1) hue-rotate(190deg) saturate(3)}
+.form:nth-child(3) img{filter:grayscale(1) brightness(1.4)}
+.chk{position:absolute;right:8px;top:4px;color:var(--gold)}
+.bottom{position:absolute;left:0;right:0;bottom:0;height:52px;display:flex;align-items:center;gap:30px;padding:0 40px;font-size:15px;background:linear-gradient(0deg,rgba(0,0,0,.8),transparent)}
+.pad{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.5px solid #ccd;margin-right:12px;font-weight:700;font-size:13px}
+.online{margin-left:auto;display:flex;align-items:center;gap:10px}.online:before{content:"";width:9px;height:9px;border-radius:50%;background:#35d07f;box-shadow:0 0 8px #35d07f}
+/* ---------- LOADOUT ---------- */
+#loadout{background:radial-gradient(ellipse at 50% 45%,#2a1610 0%,#120a08 35%,#050404 75%)}
+#loadout .smoke{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 60%,rgba(120,60,30,.12),transparent 50%),radial-gradient(ellipse at 70% 40%,rgba(80,40,20,.12),transparent 50%);animation:drift 18s ease-in-out infinite alternate}
+.lhead{position:absolute;left:96px;top:96px}
+.lhead h2{font-family:Teko;font-size:44px;color:#9aa0a8;letter-spacing:1px}
+.tabs{display:flex;gap:44px;margin-top:2px;font-size:16px;font-weight:600;color:#aaa;align-items:center}
+.tabs span{cursor:pointer;padding-bottom:6px}.tabs .act{color:var(--gold2);border-bottom:3px solid var(--gold)}
+.wlvl{position:absolute;right:90px;top:96px;width:340px;font-size:15px}
+.wlvl .bar{height:3px;background:#333;margin:6px 0}.wlvl .bar i{display:block;height:100%;width:6%;background:var(--gold)}
+.unl{display:flex;gap:20px;color:#aaa;font-size:14px}.unl b{width:20px;height:20px;border-radius:50%;background:#ddd;color:#000;display:grid;place-items:center;font-size:12px}
+.att{position:absolute;width:236px;height:48px;background:rgba(18,18,20,.85);border:1px solid rgba(255,255,255,.08);padding:4px 14px 0 70px;cursor:pointer;transition:.2s}
+.att:hover{background:rgba(60,55,40,.9);border-color:var(--gold)}
+.att.sel{background:rgba(70,62,30,.92);border-color:var(--gold)}
+.att small{display:block;font-size:10px;color:#999;letter-spacing:1px}
+.att b{font-size:15px;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.att .ic{position:absolute;left:12px;top:12px;width:46px;height:22px;opacity:.85}
+.att:after{content:"";position:absolute;right:-6px;top:-6px;width:13px;height:13px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold)}
+.att.perk b{color:var(--gold2)}
+#gun{position:absolute;left:470px;top:300px;width:740px;height:220px;animation:gunfloat 6s ease-in-out infinite;filter:drop-shadow(0 30px 30px rgba(0,0,0,.8))}
+@keyframes gunfloat{50%{transform:translateY(-8px) rotate(-.6deg)}}
+.stats{position:absolute;left:96px;top:690px;width:480px;padding:14px 18px;background:rgba(10,10,12,.7)}
+.st{display:flex;align-items:center;gap:14px;margin-bottom:8px;font-size:12px;letter-spacing:1px}
+.st span{width:200px}.st .b{flex:0 0 190px;height:4px;background:#333;position:relative}.st .b i{position:absolute;left:0;top:0;bottom:0;background:#6fbf4a;transition:width .4s}
+.st .b em{position:absolute;top:0;bottom:0;background:#c43c3c;transition:all .4s}
+.mags{position:absolute;left:330px;top:14px;font-family:Teko;font-size:40px;line-height:.9}.mags small{font-family:Rajdhani;font-size:11px;display:block;color:#bbb;letter-spacing:1px}
+.equipped{position:absolute;left:96px;top:630px;font-size:12px;color:#bbb}
+.equipped b{font-size:16px;color:#fff;margin-right:8px}.dots i{display:inline-block;width:13px;height:13px;border-radius:50%;background:var(--gold);margin-right:3px;vertical-align:middle}
+.brand{position:absolute;right:60px;bottom:40px;text-align:right;font-family:Teko;line-height:.85}
+.brand b{font-size:62px;letter-spacing:2px}.brand small{display:block;font-size:30px;letter-spacing:3px;color:#ccc}
+.lbot{position:absolute;left:96px;bottom:20px;display:flex;gap:40px;font-size:13px;color:#ccc}
+.picker{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:440px;padding:18px;display:none;z-index:9}
+.picker.on{display:block}
+.picker h4{font-size:18px;margin-bottom:10px;color:var(--gold2);letter-spacing:1px}
+.picker div{padding:10px 14px;border:1px solid var(--line);margin-bottom:6px;cursor:pointer}.picker div:hover{border-color:var(--gold);background:rgba(245,197,66,.08)}
+#fade{position:absolute;inset:0;background:#000;opacity:1;transition:opacity 1.2s;pointer-events:none;z-index:20}
+</style></head><body>
+<div id="stage">
+<!-- ================= LOBBY ================= -->
+<section id="lobby" class="screen on">
+  <div id="bg"></div><div id="bgMask"></div>
+  <canvas id="fx"></canvas>
+  <div id="opWrap"><div id="opReflect"></div><div id="opShadow"></div><div id="op"></div></div>
+  <canvas id="rainFront"></canvas>
+  <div class="vign"></div>
+
+  <div class="title">
+    <svg viewBox="0 0 64 80"><path d="M32 2 L40 22 L60 10 L48 34 L58 40 L40 46 L32 78 L24 46 L6 40 L16 34 L4 10 L24 22Z" fill="none" stroke="#dfe7f1" stroke-width="3"/><path d="M32 20 L36 44 L32 58 L28 44Z" fill="#dfe7f1"/></svg>
+    <h1>FLACON <span class="leg">LEGENDARY</span></h1>
+    <h3>THREE SPIRITS. ONE VISION.</h3>
+    <p>Freedom in the sky.<br>Power in the dark.<br>Purity in the snow.</p>
+  </div>
+  <div class="squad panel"><div class="hd"><span>SQUAD</span><span style="color:#aab">3/4</span></div>
+    <div class="slot me"><span style="color:var(--gold)">›</span><img src="assets/operator.png"><div><b>SkyRider</b><br>Level 42</div><span style="margin-left:auto;color:var(--gold)">♛</span></div>
+    <div class="slot"><div class="av">👤</div>+&nbsp; INVITE FRIEND</div>
+    <div class="slot"><div class="av">👤</div>+&nbsp; INVITE FRIEND</div>
+  </div>
+  <div class="deploy" onclick="deploy()"><svg width="52" viewBox="0 0 64 50"><path d="M32 48 L4 6 L24 18 L32 2 L40 18 L60 6Z" fill="none" stroke="#f5c542" stroke-width="3"/></svg>DEPLOY</div>
+  <div class="cust panel" onclick="go('loadout')"><svg width="34" viewBox="0 0 24 24"><path d="M8 3l-5 3 2 5 2-1v11h10V10l2 1 2-5-5-3c-1 2-2 3-4 3S9 5 8 3z" fill="#dfe7f1"/></svg>CUSTOMIZE</div>
+
+  <div class="side panel" style="top:110px"><div class="hd"><span>SQUAD <span style="color:#778">/</span> OPERATOR</span></div>
+    <div class="opCard"><img src="assets/operator.png"><div class="nm">FLACON<br><span class="leg" style="font-size:12px">LEGENDARY</span></div><span class="chk" style="left:165px;right:auto">✔</span><span class="chev">›</span></div>
+  </div>
+  <div class="side panel" style="top:272px;height:322px"><div class="hd"><span>GAME MODES</span></div>
+    <div class="mode"><span style="font-size:30px">☠</span><div><b>QUICK PLAY</b><small>FIND A MATCH</small></div><span class="chev">›</span></div>
+    <div class="mode"><span style="font-size:30px">⟁</span><div><b>GROUND OPS</b><small>TACTICAL EXTRACTION</small></div><span class="chev">›</span></div>
+    <div class="mode"><span style="font-size:30px">🜁</span><div><b>SKY ASSAULT</b><small>AIR DOMINANCE</small></div><span class="chev">›</span></div>
+  </div>
+  <div class="side panel" style="top:594px"><div class="hd"><span>BIRD FORMS</span></div>
+    <div class="forms">
+      <div class="form sel" onclick="form(this,0)"><img src="assets/operator.png"><span>AMERICAN EAGLE</span><span class="chk">✔</span></div>
+      <div class="form" onclick="form(this,1)"><img src="assets/operator.png"><span>RAVEN</span></div>
+      <div class="form" onclick="form(this,2)"><img src="assets/operator.png"><span>SNOW OWL</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LOADOUT ================= -->
+<section id="loadout" class="screen"><div class="smoke"></div><canvas id="embers"></canvas>
+  <div class="lhead"><h2>TALONSTRIKE</h2><div class="tabs"><span class="btnTag" style="margin:0">L1</span><span class="act">ATTACHMENTS</span><span>CUSTOMIZE</span><span>CHALLENGES</span><span class="btnTag" style="margin:0">R1</span></div></div>
+  <div class="wlvl"><div style="display:flex;justify-content:space-between"><b>WEAPON LEVEL 1</b><span style="color:#aaa;font-size:12px">0/825 XP</span></div><div class="bar"><i></i></div>
+    <div class="unl"><span>NEXT UNLOCKS</span><b>3</b><b>4</b><b>5</b><b>6</b><b>7</b></div></div>
+  <div id="atts"></div>
+  <svg id="gun" viewBox="0 0 740 220">
+    <defs><pattern id="camo" width="60" height="40" patternUnits="userSpaceOnUse"><rect width="60" height="40" fill="#3b4632"/><path d="M0 10 q15 -10 30 5 t30 -5 v12 q-20 8 -35 -2 t-25 6z" fill="#252c1f"/><circle cx="45" cy="30" r="8" fill="#5a6248"/></pattern>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b5f66"/><stop offset=".5" stop-color="#22252a"/><stop offset="1" stop-color="#0d0e10"/></linearGradient>
+    <linearGradient id="stockG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3a3a"/><stop offset="1" stop-color="#0b0b0b"/></linearGradient></defs>
+    <g id="muzzle"><rect x="10" y="84" width="46" height="14" rx="2" fill="url(#metal)"/><rect x="18" y="82" width="4" height="18" fill="#111"/><rect x="30" y="82" width="4" height="18" fill="#111"/></g>
+    <rect id="barrel" x="54" y="86" width="170" height="10" fill="url(#metal)"/>
+    <path d="M150 78 h240 l20 30 h-260z" fill="url(#camo)" stroke="#111"/>
+    <rect x="200" y="62" width="120" height="18" rx="3" fill="url(#metal)"/>
+    <g id="optic"><rect x="250" y="40" width="60" height="22" rx="4" fill="#1b1d21" stroke="#555"/><circle cx="256" cy="51" r="6" fill="#ff3030" opacity=".7"/></g>
+    <path d="M320 70 h120 l14 48 h-70 l-14 24 h-40 l-10 -30 h-60 l-12 -14z" fill="url(#metal)" stroke="#000"/>
+    <rect id="mag" x="350" y="118" width="34" height="62" rx="3" transform="rotate(8 367 118)" fill="url(#metal)" stroke="#000"/>
+    <path id="grip" d="M412 116 l20 0 l18 58 l-24 4z" fill="#1a1a1a" stroke="#000"/>
+    <rect id="ub" x="230" y="108" width="20" height="30" rx="3" fill="#202226"/>
+    <path id="stock" d="M450 76 l250 -8 q20 0 22 20 l4 70 q0 16 -16 18 l-40 4 q-80 -40 -160 -50 l-60 -6z" fill="url(#stockG)" stroke="#000"/>
+    <circle cx="640" cy="120" r="24" fill="none" stroke="#bbb" stroke-width="2" opacity=".7"/><path d="M630 112 l10 16 l10 -16" stroke="#bbb" fill="none" stroke-width="2" opacity=".7"/>
+    <path d="M460 92 q30 4 40 30" stroke="#6b3d22" stroke-width="10" fill="none"/>
+  </svg>
+  <div class="equipped"><span style="color:#aaa">◉ SAVE A CUSTOM MOD</span><br><b id="eqN">EQUIPPED 10/10</b><span class="dots" id="dots"></span></div>
+  <div class="stats" id="stats"></div>
+  <div class="brand"><b>WINGFALL</b><small>OPERATION TALON</small></div>
+  <div class="lbot"><span><span class="pad">B</span>BACK</span><span><span class="pad">A</span>SELECT</span><span><span class="pad">X</span>UNEQUIP</span><span><span class="pad">Y</span>PREVIEW WEAPON</span></div>
+  <div class="picker panel" id="picker"></div>
+  <div style="position:absolute;left:30px;top:30px;cursor:pointer;font-weight:700" onclick="go('lobby')">‹ BACK TO LOBBY (Esc)</div>
+</section>
+<div id="fade"></div>
+</div>
+
+<!-- top bar sits above both screens -->
+<script>
+const stage=document.getElementById('stage');
+stage.insertAdjacentHTML('afterbegin',`<div class="top"><div class="logo"><svg viewBox="0 0 90 46"><path d="M2 44 L30 8 L40 20 L50 2 L88 44 L60 30 L45 40 L32 28Z" fill="#e8eef6"/></svg>WINGFALL</div>
+<span class="btnTag">LB</span><nav><a data-s="lobby" class="act">PLAY</a><a>OPERATORS</a><a data-s="loadout">LOADOUT</a><a>BARRACKS</a><a>STORE</a><a>OPTIONS</a></nav><span class="btnTag">RB</span>
+<div class="prof"><img src="assets/operator.png"><div><b>SkyRider</b><br><span style="color:#aab;font-size:14px">Level 42</span></div><span>🔔</span><span>⚙</span><span class="cp">ⓒ <b>2,450</b></span></div></div>`);
+document.querySelectorAll('nav a').forEach(a=>a.onclick=()=>a.dataset.s&&go(a.dataset.s));
+function fit(){const s=Math.min(innerWidth/1672,innerHeight/941);stage.style.transform=`translate(-50%,-50%) scale(${s})`}
+addEventListener('resize',fit);fit();
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+ document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('act',a.dataset.s===id));}
+addEventListener('keydown',e=>{if(e.key==='Escape')go('lobby');if(e.key==='Tab'){e.preventDefault();go(document.getElementById('lobby').classList.contains('on')?'loadout':'lobby')}});
+setTimeout(()=>document.getElementById('fade').style.opacity=0,200);
+
+/* ---------- Operator walk-in: approaches camera, then idle breathing ---------- */
+const op=document.getElementById('op'),opW=document.getElementById('opWrap'),sh=document.getElementById('opShadow');
+let t0=performance.now();const WALK=5200;
+function opLoop(now){const t=(now-t0);let p=Math.min(t/WALK,1),e=1-Math.pow(1-p,3);
+ const scale=.55+.45*e, stride=p<1?Math.sin(t/260):0, idle=Math.sin(t/900);
+ const bob=p<1?Math.abs(stride)*-10:idle*2.5, sway=p<1?stride*1.6:idle*.4;
+ op.style.transform=`translateY(${bob}px) rotate(${sway}deg) scale(${scale},${scale*(p<1?1:1+idle*.004)})`;
+ opW.style.bottom=(60+(1-e)*120)+'px';
+ op.style.filter=`drop-shadow(0 0 22px rgba(80,170,255,.35)) brightness(${.55+.45*e}) blur(${(1-e)*1.4}px)`;
+ sh.style.transform=`scale(${scale*(1-Math.abs(stride)*.08)})`;
+ requestAnimationFrame(opLoop)}
+requestAnimationFrame(opLoop);
+document.getElementById('op').ondblclick=()=>t0=performance.now();
+
+/* ---------- Rain, mist, lightning, hangar lights ---------- */
+function mk(id){const c=document.getElementById(id);c.width=1672;c.height=941;return c.getContext('2d')}
+const fx=mk('fx'),rf=mk('rainFront');
+const drops=[...Array(520)].map(()=>({x:Math.random()*1800,y:Math.random()*941,l:10+Math.random()*24,v:14+Math.random()*14,z:Math.random()}));
+const splash=[];let flash=0;
+function rain(){fx.clearRect(0,0,1672,941);rf.clearRect(0,0,1672,941);
+ if(Math.random()<.004)flash=1; if(flash>0){fx.fillStyle=`rgba(170,200,255,${flash*.22})`;fx.fillRect(0,0,1672,941);flash*=.88;if(flash<.02)flash=0}
+ const g=fx.createLinearGradient(0,700,0,941);g.addColorStop(0,'rgba(120,160,220,0)');g.addColorStop(1,'rgba(120,160,220,.10)');fx.fillStyle=g;fx.fillRect(0,700,1672,241);
+ for(const d of drops){const c=d.z>.75?rf:fx;c.strokeStyle=`rgba(190,215,255,${.15+d.z*.35})`;c.lineWidth=d.z>.75?1.6:1;
+  c.beginPath();c.moveTo(d.x,d.y);c.lineTo(d.x-d.l*.18,d.y+d.l);c.stroke();d.y+=d.v;d.x-=d.v*.18;
+  if(d.y>941){if(Math.random()<.3)splash.push({x:d.x,y:760+Math.random()*180,r:1,a:.5});d.y=-30;d.x=Math.random()*1800}}
+ for(let i=splash.length-1;i>=0;i--){const s=splash[i];fx.strokeStyle=`rgba(180,210,255,${s.a})`;fx.beginPath();fx.ellipse(s.x,s.y,s.r*2.2,s.r*.6,0,0,7);fx.stroke();s.r+=.6;s.a-=.03;if(s.a<=0)splash.splice(i,1)}
+ requestAnimationFrame(rain)}
+rain();
+
+function form(el,i){document.querySelectorAll('.form').forEach(f=>{f.classList.remove('sel');f.querySelector('.chk')?.remove()});el.classList.add('sel');el.insertAdjacentHTML('beforeend','<span class="chk">✔</span>');
+ op.style.filter=['','brightness(.5) sepia(1) hue-rotate(190deg) saturate(3)','grayscale(1) brightness(1.35)'][i];t0=performance.now()-WALK+400}
+function deploy(){const f=document.getElementById('fade');f.style.opacity=1;setTimeout(()=>{alert('DEPLOY → matchmaking hook goes here');f.style.opacity=0},1300)}
+
+/* ---------- LOADOUT ---------- */
+const SLOTS=[
+ {k:'MUZZLE',x:76,y:100,el:'muzzle',opts:[['NO. 3 TALON BRAKE',{rec:+8,spd:-2}],['SUPPRESSOR MK2',{acc:+4,fp:-3}],['FLASH HIDER',{acc:+2}]]},
+ {k:'BARREL',x:262,y:86,el:'barrel',opts:[['WARHAWK 134MM RAPID',{spd:+6,acc:-3}],['LONG RANGE 22"',{fp:+6,spd:-6}],['SHORT 9"',{spd:+10,fp:-6}]]},
+ {k:'OPTIC',x:436,y:86,el:'optic',opts:[['SLATE REFLECTOR',{acc:+6}],['HOLO 1X',{acc:+3,spd:+2}],['RAPTOR 4X',{acc:+10,spd:-5}]]},
+ {k:'STOCK',x:586,y:100,el:'stock',opts:[['SHIRAISHI T100',{acc:+5,spd:-2}],['SKELETON STOCK',{spd:+6,acc:-3}],['NO STOCK',{spd:+12,acc:-9}]]},
+ {k:'UNDERBARREL',x:88,y:218,el:'ub',opts:[['M1941 HAND STOP',{acc:+4}],['VERTICAL GRIP',{acc:+6,spd:-2}],['BIPOD',{acc:+10,spd:-8}]]},
+ {k:'MAGAZINE',x:280,y:246,el:'mag',opts:[['.30 RUSSIAN SHORT 30RND',{am:30}],['EXTENDED 50RND',{am:50,spd:-6}],['FAST MAG 20RND',{am:20,spd:+5}]]},
+ {k:'REAR GRIP',x:438,y:254,el:'grip',opts:[['RUBBER GRIP',{acc:+3}],['STIPPLED GRIP',{spd:+3}],['FEATHER WRAP',{acc:+2,spd:+2}]]},
+ {k:'AMMO TYPE',x:280,y:296,opts:[['FRANGIBLE',{fp:+5}],['HOLLOW POINT',{fp:+8,acc:-2}],['ARMOR PIERCING',{fp:+4}]]},
+ {k:'PROFICIENCY',x:586,y:246,perk:1,opts:[['GUNG-HO',{}],['STEADY AIM',{acc:+4}],['QUICKDRAW',{spd:+4}]]},
+ {k:'KIT',x:586,y:286,perk:1,opts:[['QUICK',{spd:+5}],['FULLY LOADED',{am:10}],['TALON EYE',{acc:+3}]]}];
+const sel=SLOTS.map(()=>0),atts=document.getElementById('atts'),S=2.0; // scale positions from 740-wide reference
+SLOTS.forEach((s,i)=>{const d=document.createElement('div');d.className='att'+(s.perk?' perk':'');d.style.left=s.x*S+'px';d.style.top=s.y*S+'px';
+ d.innerHTML=`<svg class="ic" viewBox="0 0 46 22"><rect x="2" y="8" width="42" height="6" fill="#ccc"/></svg><small>${s.k}</small><b></b>`;
+ d.onclick=()=>pick(i);atts.appendChild(d);s.d=d});
+function render(){let fp=60,spd=50,acc=55,am=0;SLOTS.forEach((s,i)=>{const o=s.opts[sel[i]];s.d.querySelector('b').textContent=o[0];
+  fp+=o[1].fp||0;spd+=o[1].spd||0;acc+=(o[1].acc||0)+(o[1].rec||0)*.4;if(o[1].am&&s.k==='MAGAZINE')am=o[1].am;else am+=0;
+  if(s.el){const e=document.getElementById(s.el);e.style.transition='opacity .3s';e.style.opacity=.4;setTimeout(()=>e.style.opacity=1,150)}});
+ const kit=SLOTS[9].opts[sel[9]][1].am||0;am+=kit;
+ const row=(n,v,base)=>{v=Math.max(5,Math.min(100,v));const d=v-base;return `<div class="st"><span>${n}</span><div class="b"><i style="width:${Math.min(v,base)}%"></i>${d<0?`<em style="left:${v}%;width:${-d}%"></em>`:`<em style="left:${base}%;width:${d}%;background:#7fe05a"></em>`}</div></div>`};
+ document.getElementById('stats').innerHTML=row('FIREPOWER',fp,60)+row('SPEED',spd,50)+row('ACCURACY',acc,55)+row('AMMO',am*1.6,48)+`<div class="mags">3<small>MAGS</small>${am}<small>ROUNDS/MAG</small></div>`;
+ document.getElementById('dots').innerHTML='<i></i>'.repeat(10);window.WF_LOADOUT={fp,spd,acc,am}}
+function pick(i){const s=SLOTS[i],p=document.getElementById('picker');SLOTS.forEach(x=>x.d.classList.remove('sel'));s.d.classList.add('sel');
+ p.innerHTML=`<h4>${s.k}</h4>`+s.opts.map((o,j)=>`<div onclick="choose(${i},${j})">${j===sel[i]?'✔ ':''}${o[0]}<span style="float:right;color:#9c9c;font-size:12px">${Object.entries(o[1]).map(([k,v])=>k.toUpperCase()+' '+(v>0?'+':'')+v).join('  ')}</span></div>`).join('');p.classList.add('on')}
+function choose(i,j){sel[i]=j;document.getElementById('picker').classList.remove('on');render()}
+render();
+const em=mk('embers'),parts=[...Array(90)].map(()=>({x:Math.random()*1672,y:Math.random()*941,v:.2+Math.random()*.6,r:Math.random()*1.8}));
+(function emb(){em.clearRect(0,0,1672,941);for(const q of parts){em.fillStyle=`rgba(255,${120+q.r*40|0},60,${.25+q.r*.2})`;em.beginPath();em.arc(q.x,q.y,q.r,0,7);em.fill();q.y-=q.v;q.x+=Math.sin(q.y/60)*.3;if(q.y<0){q.y=941;q.x=Math.random()*1672}}requestAnimationFrame(emb)})();
+</script>
+<script src="online.js"></script></body></html>
