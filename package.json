@@ -1,0 +1,15 @@
+{
+  "name": "wingfall",
+  "version": "0.2.0",
+  "description": "WINGFALL - online multiplayer web game (bird operators, lobby, loadout)",
+  "main": "main.js",
+  "scripts": {
+    "start": "node server.js",
+    "desktop": "electron .",
+    "dist": "electron-builder --win --linux --mac"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": { "ws": "^8.18.0" },
+  "devDependencies": { "electron": "^33.0.0", "electron-builder": "^25.0.0" },
+  "build": { "appId": "com.wingfall.game", "productName": "WINGFALL", "files": ["main.js"] }
+}
